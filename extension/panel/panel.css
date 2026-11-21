@@ -17,7 +17,8 @@
   --err: #b3261e;
   --err-soft: #fdecea;
   --mark: #ffe27a;
-  --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, Menlo, monospace;
+  /* The system coding font. panel.js re-requests it if Firefox resolves it wrongly. */
+  --mono: monospace;
   --radius: 6px; /* one corner radius for the search box, buttons and accordions */
   --gutter: 16px; /* left and right margin shared by every row of the panel */
 }

@@ -6,6 +6,9 @@
 //
 //   npm run test:firefox
 //   FIREFOX=/path/to/firefox  SMOKE_SHOTS=some/dir  npm run test:firefox
+//   SMOKE_SCHEME=light|dark   force the colour scheme (default: the system's)
+//   SMOKE_CLIPBOARD=1         also test copying; on by default in CI only,
+//                             so a local run never touches your clipboard
 //
 // Reaching the browser's own UI needs Firefox's "system access" mode, which
 // this script switches on for its own Firefox process only.
@@ -43,6 +46,15 @@ const prefs = {
   'datareporting.policy.dataSubmissionEnabled': false,
   'app.update.enabled': false,
 };
+const scheme = { dark: 0, light: 1 }[process.env.SMOKE_SCHEME];
+if (scheme !== undefined) {
+  Object.assign(prefs, {
+    'ui.systemUsesDarkTheme': 1 - scheme,
+    'layout.css.prefers-color-scheme.content-override': scheme,
+    'browser.theme.toolbar-theme': scheme,
+    'browser.theme.content-theme': scheme,
+  });
+}
 await writeFile(join(profile, 'user.js'), Object.entries(prefs).map(([k, v]) => `user_pref(${JSON.stringify(k)}, ${JSON.stringify(v)});`).join('\n'));
 
 const server = spawn(process.execPath, [join(root, 'test', 'serve.mjs'), String(httpPort)], { stdio: 'ignore' });
@@ -214,14 +226,16 @@ try {
     product.open = true;
     product.dispatchEvent(new content.Event('toggle'));
     const rows = product.querySelectorAll('.body > *').length;
+    const width = (text) => { const s = document.createElement('span'); s.textContent = text; product.querySelector('.body').append(s); const w = s.getBoundingClientRect().width; s.remove(); return w; };
+    const monospace = width('iiiiiiii') === width('MMMMMMMM');
     const q = document.getElementById('q');
     q.value = 'north';
     q.dispatchEvent(new content.Event('input'));
     q.dispatchEvent(new content.KeyboardEvent('keydown', { key: 'Enter' }));
-    return { rows, hits: document.getElementById('hits').textContent, marks: document.querySelectorAll('mark').length,
+    return { rows, monospace, hits: document.getElementById('hits').textContent, marks: document.querySelectorAll('mark').length,
       shown: Array.from(document.querySelectorAll('.obj:not(.error)')).filter((o) => !o.hidden).length };`);
-  assert.deepEqual(tree, { rows: 11, hits: '1 of 7', marks: 7, shown: 4 });
-  console.log('ok  accordion shows the object tree; search finds 7 matches in 4 objects');
+  assert.deepEqual(tree, { rows: 11, monospace: true, hits: '1 of 7', marks: 7, shown: 4 });
+  console.log('ok  accordion shows the object tree in a monospace font; search finds 7 matches in 4 objects');
   await saveShot('popup', 'firefox-popup.png');
 
   await click('popup', '#btn-download');
@@ -234,6 +248,18 @@ try {
   assert.deepEqual([saved[4]['@type'], saved[5]['@type']], ['Review', 'Place']);
   assert.equal(await chrome(`!!smoke.popup()`), true, 'the popup stays open after a download');
   console.log('ok  download saves the 4 valid JSON-LD blocks plus the Microdata and RDFa items as one .json file');
+
+  if (process.env.CI || process.env.SMOKE_CLIPBOARD) {
+    await click('popup', '#btn-copy');
+    const toast = await until('the copy confirmation', async () => {
+      const seen = await inPage('popup', `return { text: document.getElementById('toast').textContent };`);
+      return seen && seen.text ? seen : null;
+    });
+    assert.equal(toast.text, 'All structured data copied');
+    const copied = JSON.parse(await chrome(`navigator.clipboard.readText()`));
+    assert.equal(copied.length, 6, 'the clipboard holds the same six entries as the download');
+    console.log('ok  copy puts all structured data on the clipboard');
+  }
 
   // --------------------------------------- 2. "Keep open in the sidebar" button
   await click('popup', '#btn-sidebar');

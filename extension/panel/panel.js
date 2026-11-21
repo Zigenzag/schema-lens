@@ -168,6 +168,29 @@ async function copyText(text, done) {
   }
 }
 
+/**
+ * In the first page of a newly started extension process (the first time the
+ * panel opens in a session, when no other add-on is running) Firefox can
+ * resolve the tree's monospace font to a proportional one, and it keeps that
+ * choice for as long as the page lives. Measure, and if the font isn't
+ * fixed-width ask again with an equivalent font list, which is looked up afresh.
+ */
+function ensureMonospace(attempt = 0) {
+  const probe = h('span');
+  const holder = h('div', { class: 'body', 'aria-hidden': 'true' }, probe);
+  holder.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+  document.body.append(holder);
+  const width = (text) => {
+    probe.textContent = text;
+    return probe.getBoundingClientRect().width;
+  };
+  const fixedWidth = width('iiiiiiii') === width('MMMMMMMM');
+  holder.remove();
+  if (fixedWidth || attempt >= 8) return;
+  document.documentElement.style.setProperty('--mono', `monospace${', monospace'.repeat(attempt + 1)}`);
+  setTimeout(() => ensureMonospace(attempt + 1), 120);
+}
+
 // ---------------------------------------------------------------- tree
 
 /** Renders the entries of an object or array. Nested nodes fill in when first opened. */
@@ -581,6 +604,8 @@ async function requestAllSites() {
 }
 
 // ---------------------------------------------------------------- wiring
+
+ensureMonospace();
 
 let searchTimer;
 ui.q.addEventListener('input', () => {

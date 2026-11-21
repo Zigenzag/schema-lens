@@ -43,6 +43,11 @@ jobs:
       - name: Lint the add-on
         run: npm run lint
 
+      - name: End-to-end test in Firefox
+        run: |
+          firefox --version
+          npm run test:firefox
+
       - name: Build the package
         run: npm run build
 
