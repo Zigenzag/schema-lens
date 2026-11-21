@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Fixture: no JSON-LD</title>
+  <title>Fixture: no structured data</title>
+  <!-- Open Graph tags alone are not schema objects -->
+  <meta property="og:title" content="Nothing to see">
 </head>
 <body>
-  <div itemscope itemtype="https://schema.org/Person"><span itemprop="name">A. Person</span></div>
+  <p>A page with no JSON-LD, Microdata or RDFa.</p>
 </body>
 </html>

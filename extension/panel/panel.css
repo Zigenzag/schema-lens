@@ -160,12 +160,6 @@ a:hover { text-decoration: underline; }
 }
 .summary strong { color: var(--text); font-weight: 600; }
 .summary .bad { color: var(--err); font-weight: 600; }
-.chip {
-  padding: 0 7px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  cursor: help;
-}
 
 /* ------------------------------------------------------------- blocks */
 

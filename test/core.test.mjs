@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildBlocks,
+  buildFormatBlock,
   exportValue,
   fileName,
   flatten,
@@ -127,6 +128,23 @@ test('origins: formatting is ignored, duplicates match one for one', () => {
   const removed = markOrigins(live, ['{\n  "@type": "A"\n}', '{"@type": bad}', '{"@type":"Gone"}']);
   assert.deepEqual(live.map((b) => b.origin), ['source', 'injected', 'injected', 'source']);
   assert.deepEqual(removed, ['{"@type":"Gone"}']);
+});
+
+test('Microdata and RDFa items form one block per format', () => {
+  assert.equal(buildFormatBlock('microdata', []), null);
+  assert.equal(buildFormatBlock('rdfa', undefined), null);
+
+  const items = [{ '@type': 'BreadcrumbList', itemListElement: [] }, { '@type': 'Product', name: 'Wallet' }];
+  const block = buildFormatBlock('microdata', items);
+  assert.equal(block.format, 'microdata');
+  assert.equal(block.error, null);
+  assert.deepEqual(block.objects.map((o) => [o.types[0], o.label, o.graph]), [['BreadcrumbList', '', false], ['Product', 'Wallet', false]]);
+
+  // JSON-LD keeps its block shape in an export; the other formats contribute their items.
+  const jsonld = buildBlocks(['{"@graph":[{"@type":"A"},{"@type":"B"}]}', 'broken']);
+  assert.deepEqual(jsonld.map((b) => b.format), ['jsonld', 'jsonld']);
+  assert.deepEqual(exportValue([...jsonld, block]), [{ '@graph': [{ '@type': 'A' }, { '@type': 'B' }] }, ...items]);
+  assert.deepEqual(exportValue([buildFormatBlock('rdfa', [items[1]])]), items[1]);
 });
 
 test('search looks at keys and values at any depth, case-insensitively', () => {

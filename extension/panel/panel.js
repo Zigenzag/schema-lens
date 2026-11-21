@@ -3,6 +3,7 @@
 
 import {
   buildBlocks,
+  buildFormatBlock,
   exportValue,
   fileName,
   hasMatch,
@@ -52,6 +53,7 @@ const state = {
 
 const MIN_QUERY = 2;
 const AUTO_OPEN_MAX = 12; // nested nodes with more entries than this start collapsed
+const FORMATS = { jsonld: 'JSON-LD', microdata: 'Microdata', rdfa: 'RDFa' };
 const ORIGINS = {
   source: ['In page source', 'This block is in the HTML the server sent.'],
   injected: ['Added by JavaScript', 'Not in the HTML the server sent: a script added or changed it after load.'],
@@ -307,13 +309,16 @@ function renderBlock(block) {
   const meta = block.error ? '' : plural(count, 'object') + (block.objects[0].graph ? ' in @graph' : '');
   block.badge = h('span', { class: 'origin' });
   setOrigin(block);
+  const jsonld = block.format === 'jsonld';
+  const title = jsonld ? `Block ${block.index + 1}` : FORMATS[block.format];
+  const copyTitle = jsonld ? 'Copy this block as a <script> tag' : `Copy this ${FORMATS[block.format]} as a JSON-LD <script> tag`;
   const copyButton = block.error
     ? miniButton('copy', 'Copy the raw text of this block', () => copyText(block.text, 'Raw block copied'))
-    : miniButton('code', 'Copy this block as a <script> tag', () => copyText(scriptTag(block.value), 'Script tag copied'));
+    : miniButton('code', copyTitle, () => copyText(scriptTag(block.value), 'Script tag copied'));
   block.el = h(
     'section',
     { class: 'block' },
-    h('div', { class: 'block-head' }, h('span', { class: 'block-title', text: `Block ${block.index + 1}` }), meta && h('span', { text: meta }), block.badge, copyButton),
+    h('div', { class: 'block-head' }, h('span', { class: 'block-title', text: title }), meta && h('span', { text: meta }), block.badge, copyButton),
     block.error ? renderError(block) : block.objects.map(renderObject),
   );
   return block.el;
@@ -324,29 +329,21 @@ function stateCard(title, ...lines) {
 }
 
 function emptyState() {
-  const { microdata, rdfa } = state.page;
-  const other = [microdata.count && 'Microdata', rdfa.count && 'RDFa'].filter(Boolean).join(' and ');
-  return stateCard(
-    'No JSON-LD on this page',
-    h('p', null, 'There are no ', h('code', { text: 'application/ld+json' }), ' script blocks in the page.'),
-    other && h('p', { text: `It does use ${other}, which this inspector detects but doesn’t display.` }),
-  );
+  return stateCard('No structured data on this page', h('p', { text: 'No JSON-LD, Microdata or RDFa was found.' }));
 }
 
 function renderSummary() {
-  const { blocks, page } = state;
-  const objects = blocks.reduce((n, b) => n + b.objects.length, 0);
+  const { blocks } = state;
   const errors = blocks.filter((b) => b.error).length;
+  // Objects per format, e.g. "10 objects · 8 JSON-LD · 1 Microdata · 1 RDFa".
+  const counts = Object.keys(FORMATS)
+    .map((format) => [FORMATS[format], blocks.filter((b) => b.format === format).reduce((n, b) => n + b.objects.length, 0)])
+    .filter(([, n]) => n > 0);
+  const total = counts.reduce((n, [, count]) => n + count, 0);
   const parts = [];
-  if (blocks.length) {
-    parts.push(h('span', null, h('strong', { text: plural(objects, 'object') }), ` in ${plural(blocks.length, 'block')}`));
-  }
+  if (counts.length === 1) parts.push(h('span', null, h('strong', { text: plural(total, 'object') }), ` in ${counts[0][0]}`));
+  else if (total) parts.push(h('strong', { text: plural(total, 'object') }), ...counts.map(([name, n]) => h('span', { text: `${n} ${name}` })));
   if (errors) parts.push(h('span', { class: 'bad', text: plural(errors, 'error') }));
-  for (const [name, found] of [['Microdata', page.microdata], ['RDFa', page.rdfa]]) {
-    if (!found.count) continue;
-    const types = found.types.map((t) => t.replace(/^https?:\/\/(www\.)?schema\.org\//i, '')).join(', ');
-    parts.push(h('span', { class: 'chip', text: `${name} · ${found.count}`, title: `${name} is also on this page (detected, not shown).${types ? ` Types: ${types}` : ''}` }));
-  }
   if (state.sourceNote) {
     parts.push(
       h('span', {
@@ -517,11 +514,15 @@ async function scan() {
     if (id !== state.scan) return;
     state.page = page;
     state.sourceNote = '';
-    state.blocks = buildBlocks(page.blocks);
+    state.blocks = [
+      ...buildBlocks(page.blocks),
+      buildFormatBlock('microdata', page.microdata),
+      buildFormatBlock('rdfa', page.rdfa),
+    ].filter(Boolean);
     render();
 
-    // Second, slower pass: compare against the HTML the server sent. Skipped
-    // when there is nothing to label, so schema-less pages cost no request.
+    // Second, slower pass: compare JSON-LD against the HTML the server sent.
+    // Skipped when there is none to label, so those pages cost no request.
     if (!page.blocks.length) return;
     const source = await inject(tab.id, collectSource).catch((err) => ({ error: err.message }));
     if (id !== state.scan) return;
@@ -530,11 +531,12 @@ async function scan() {
       renderSummary();
       return;
     }
-    const removed = buildBlocks(markOrigins(state.blocks, source.blocks), state.blocks.length);
+    const jsonld = state.blocks.filter((b) => b.format === 'jsonld');
+    const removed = buildBlocks(markOrigins(jsonld, source.blocks), jsonld.length);
     for (const block of removed) block.origin = 'removed';
-    for (const block of state.blocks) setOrigin(block);
+    for (const block of jsonld) setOrigin(block);
     if (removed.length) {
-      state.blocks.push(...removed);
+      state.blocks.splice(jsonld.length, 0, ...removed); // keep JSON-LD together, ahead of Microdata and RDFa
       render();
     }
   } finally {

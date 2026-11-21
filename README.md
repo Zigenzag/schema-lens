@@ -1,6 +1,6 @@
 # Schema Lens – JSON-LD Inspector (Firefox)
 
-Shows the JSON-LD structured data on the current page. Every schema object gets its own accordion with a collapsible tree inside.
+Shows the structured data on the current page: JSON-LD, Microdata and RDFa. Every schema object gets its own accordion with a collapsible tree inside.
 
 Source and issue tracker: <https://github.com/Zigenzag/schema-lens>
 
@@ -28,12 +28,13 @@ Release Firefox only keeps add-ons that Mozilla has signed. For a private (unlis
 
 - Click the toolbar button, or press `Alt+Shift+J`. New add-ons start in the Extensions (puzzle piece) menu; pin it to the toolbar from there.
 - Each `<script type="application/ld+json">` is a **block**. Each object in it, including every node of an `@graph` and every item of a top-level array, is an accordion.
-- The badge on a block says whether it was **in the page source** or **added by JavaScript** after load.
+- The badge on a JSON-LD block says whether it was **in the page source** or **added by JavaScript** after load.
 - Search filters to matching objects, opens them and highlights the matches. `Enter` and `Shift+Enter` step through them.
 - Buttons copy one object as JSON, copy a block as a `<script>` tag, copy everything, or download everything as `.json`.
 - An `@type` value links to its schema.org page. A `{"@id": …}` reference to another object on the page becomes a jump button.
 - Invalid JSON is shown with the parser's message and the offending lines.
-- Microdata and RDFa are detected and counted, not displayed.
+- Microdata and RDFa items are converted to the same object form as JSON-LD and listed under their own headings. Copying or downloading them gives JSON-LD.
+- RDFa support covers RDFa Lite (`vocab`, `prefix`, `typeof`, `property`, `resource`). Properties outside a typed item, such as Open Graph tags, are left out.
 - The sidebar button keeps the inspector open beside the page. It follows you from tab to tab once you allow site access.
 
 ## Permissions and privacy

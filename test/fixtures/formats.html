@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture: Microdata and RDFa, no JSON-LD</title>
+  <!-- RDFa in name only: not inside a typed item, so it is not a schema object -->
+  <meta property="og:title" content="Ignored">
+</head>
+<body>
+  <!-- Microdata 1: a breadcrumb trail, as WordPress themes commonly write it.
+       The outer itemprop has no item around it and must not hide the list. -->
+  <nav itemprop="breadcrumb">
+    <ul itemscope itemtype="http://schema.org/BreadcrumbList">
+      <meta name="numberOfItems" content="2">
+      <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+        <a href="/" itemprop="item"><span itemprop="name">Home</span></a>
+        <meta itemprop="position" content="1">
+      </li>
+      <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+        <a href="/news/" itemprop="item"><span itemprop="name">News</span></a>
+        <meta itemprop="position" content="2">
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Microdata 2: itemid, itemref, repeated properties and the element-specific value rules -->
+  <div itemscope itemtype="https://schema.org/Product" itemid="#wallet" itemref="extra">
+    <h2 itemprop="name">  Classic
+      Wallet </h2>
+    <a itemprop="image" href="/img/a.jpg">front</a>
+    <a itemprop="image" href="/img/b.jpg">back</a>
+    <img itemprop="logo" src="/extension/icons/icon.svg" alt="" width="16" height="16">
+    <div itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+      <data itemprop="price" value="49.99">£49.99</data>
+      <meta itemprop="priceCurrency" content="GBP">
+      <link itemprop="availability" href="https://schema.org/InStock">
+    </div>
+    <time itemprop="releaseDate" datetime="2026-01-05">5 January</time>
+  </div>
+  <p id="extra">Made by <span itemprop="brand">Northfold</span></p>
+
+  <!-- RDFa 1: vocab, a nested typed property, repeated properties, content and href values -->
+  <div vocab="https://schema.org/" typeof="Person" resource="#sam">
+    <span property="name">Sam Field</span>
+    <a property="url" href="/people/sam">profile</a>
+    <meta property="birthDate" content="1990-04-02">
+    <div property="address" typeof="PostalAddress">
+      <span property="addressLocality">Leeds</span>
+      <span property="addressCountry">GB</span>
+    </div>
+    <span property="knowsLanguage">English</span>
+    <span property="knowsLanguage">French</span>
+  </div>
+
+  <!-- RDFa 2: prefixes instead of vocab, and a type from another vocabulary -->
+  <div prefix="ex: http://example.com/ns#" typeof="schema:Event ex:Gig">
+    <span property="schema:name">Launch night</span>
+    <time property="schema:startDate" datetime="2026-12-04T18:00">4 December</time>
+  </div>
+</body>
+</html>

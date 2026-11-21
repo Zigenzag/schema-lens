@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/Zigenzag/schema-lens/issues"
   },
-  "description": "Firefox add-on that shows a page's JSON-LD structured data as accordions.",
+  "description": "Firefox add-on that shows a page's structured data (JSON-LD, Microdata, RDFa) as accordions.",
   "type": "module",
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",

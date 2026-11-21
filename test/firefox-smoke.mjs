@@ -17,6 +17,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expectedFormats } from './fixtures/formats.expected.mjs';
 
 const ADDON_ID = 'schema-lens@local';
 const WIDGET = 'schema-lens_local'; // how Firefox spells the id in its own element ids
@@ -181,9 +182,11 @@ try {
     'FAQPage | ',
     'No @type | An object with no type',
     'Article | How we tan our leather',
+    'Review | ',
+    'Place | Northfold Workshop',
   ];
   const ORIGINS = ['In page source', 'In page source', 'In page source', 'In page source', 'Added by JavaScript'];
-  const SUMMARY = '8 objects in 5 blocks1 errorMicrodata · 2RDFa · 1';
+  const SUMMARY = '10 objects8 JSON-LD1 Microdata1 RDFa1 error';
 
   // ----------------------------------------------- 1. toolbar button → popup
   await send('browsingContext.navigate', { context: page.context, url: `${fixtures}/sample.html`, wait: 'complete' });
@@ -203,7 +206,7 @@ try {
   assert.ok(popup.error && !/JSON\.parse|line \d/.test(popup.error), `a clean error message, got "${popup.error}"`);
   const size = await chrome(`(() => { const r = smoke.popup().getBoundingClientRect(); return { width: r.width, height: r.height }; })()`);
   assert.deepEqual(size, { width: 520, height: 600 });
-  console.log(`ok  toolbar button opens a 520×600 popup listing 8 objects; parse error reads "${popup.error}"`);
+  console.log(`ok  toolbar button opens a 520×600 popup listing 10 objects in three formats; parse error reads "${popup.error}"`);
 
   // Accordions fill in when opened; search filters, opens and highlights.
   const tree = await inPage('popup', `
@@ -217,19 +220,20 @@ try {
     q.dispatchEvent(new content.KeyboardEvent('keydown', { key: 'Enter' }));
     return { rows, hits: document.getElementById('hits').textContent, marks: document.querySelectorAll('mark').length,
       shown: Array.from(document.querySelectorAll('.obj:not(.error)')).filter((o) => !o.hidden).length };`);
-  assert.deepEqual(tree, { rows: 11, hits: '1 of 6', marks: 6, shown: 3 });
-  console.log('ok  accordion shows the object tree; search finds 6 matches in 3 objects');
+  assert.deepEqual(tree, { rows: 11, hits: '1 of 7', marks: 7, shown: 4 });
+  console.log('ok  accordion shows the object tree; search finds 7 matches in 4 objects');
   await saveShot('popup', 'firefox-popup.png');
 
   await click('popup', '#btn-download');
   const saved = await until('the download to be saved', async () =>
     JSON.parse(await readFile(join(downloads, 'localhost-test-fixtures-sample.html-schema.json'), 'utf8')),
   );
-  assert.equal(saved.length, 4, 'one entry per block that parsed');
+  assert.equal(saved.length, 6, 'one entry per JSON-LD block that parsed, then each Microdata and RDFa item');
   assert.equal(saved[0]['@type'], 'Product');
   assert.equal(saved[3].headline, 'How we tan our leather');
+  assert.deepEqual([saved[4]['@type'], saved[5]['@type']], ['Review', 'Place']);
   assert.equal(await chrome(`!!smoke.popup()`), true, 'the popup stays open after a download');
-  console.log('ok  download saves the 4 valid blocks as one .json file');
+  console.log('ok  download saves the 4 valid JSON-LD blocks plus the Microdata and RDFa items as one .json file');
 
   // --------------------------------------- 2. "Keep open in the sidebar" button
   await click('popup', '#btn-sidebar');
@@ -254,9 +258,9 @@ try {
   await click('sidebar', '.state .btn');
   await until('the sidebar to read the new tab', async () => {
     const seen = await inPage('sidebar', READ);
-    return seen && seen.state === 'No JSON-LD on this page' && seen.summary === 'Microdata · 1' ? seen : null;
+    return seen && seen.state === 'No structured data on this page' && seen.summary === '' ? seen : null;
   });
-  console.log('ok  on a new tab the sidebar asks for site access, then reports a page without JSON-LD');
+  console.log('ok  on a new tab the sidebar asks for site access, then reports a page without structured data');
 
   await chrome(`(() => { gBrowser.selectedTab = gBrowser.tabs[0]; })()`);
   const back = await until('the sidebar to follow the tab switch', async () => {
@@ -269,7 +273,30 @@ try {
   console.log('ok  sidebar follows the switch back to the first tab');
   await saveShot('sidebar', 'firefox-sidebar.png');
 
-  // ---------------------------------------------- 4. pages that can't be read
+  // ------------------------------------ 4. a page with only Microdata and RDFa
+  await chrome(`(() => { gBrowser.selectedTab = gBrowser.addTrustedTab('${fixtures}/formats.html'); })()`);
+  const formats = await until('the sidebar to show Microdata and RDFa items', async () => {
+    const seen = await inPage('sidebar', READ);
+    return seen && seen.objects.length === 4 ? seen : null;
+  });
+  assert.equal(formats.summary, '4 objects2 Microdata2 RDFa');
+  assert.deepEqual(formats.objects, [
+    'BreadcrumbList | ',
+    'Product | Classic Wallet',
+    'Person | Sam Field',
+    'Event, http://example.com/ns#Gig | Launch night',
+  ]);
+  assert.deepEqual(formats.origins, [], 'no source label on Microdata or RDFa');
+  await click('sidebar', '#btn-download');
+  const converted = await until('the converted download', async () =>
+    JSON.parse(await readFile(join(downloads, 'localhost-test-fixtures-formats.html-schema.json'), 'utf8')),
+  );
+  const expected = expectedFormats(`http://localhost:${httpPort}`);
+  assert.deepEqual(converted, [...expected.microdata, ...expected.rdfa]);
+  console.log('ok  Microdata and RDFa items are parsed into the expected objects and shown as accordions');
+  await saveShot('sidebar', 'firefox-sidebar-formats.png');
+
+  // ---------------------------------------------- 5. pages that can't be read
   await chrome(`(() => { gBrowser.selectedTab = gBrowser.addTrustedTab('about:preferences'); })()`);
   await until('the sidebar to explain a restricted page', async () => {
     const seen = await inPage('sidebar', READ);

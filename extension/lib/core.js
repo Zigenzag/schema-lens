@@ -118,30 +118,45 @@ export function flatten(value) {
 
 let uid = 0;
 
-/** Turns raw script texts into the block/object model the panel renders. */
+function makeObject(block, value, graph) {
+  return {
+    id: `obj-${uid++}`,
+    block,
+    value,
+    graph,
+    types: typesOf(value),
+    label: labelOf(value),
+    size: Object.keys(value).length,
+  };
+}
+
+/** Turns raw JSON-LD script texts into the block/object model the panel renders. */
 export function buildBlocks(texts, startIndex = 0) {
   return texts.map((text, i) => {
-    const block = { index: startIndex + i, text, origin: 'unknown', error: null, objects: [] };
+    const block = { index: startIndex + i, format: 'jsonld', text, origin: 'unknown', error: null, objects: [] };
     const parsed = parseBlock(text);
     if (!parsed.ok) {
       block.error = parsed.error;
       return block;
     }
     block.value = parsed.value;
-    block.objects = flatten(parsed.value).map((item) => ({
-      id: `obj-${uid++}`,
-      block,
-      value: item.value,
-      graph: item.graph,
-      types: typesOf(item.value),
-      label: labelOf(item.value),
-      size: Object.keys(item.value).length,
-    }));
+    block.objects = flatten(parsed.value).map((item) => makeObject(block, item.value, item.graph));
     if (!block.objects.length) {
       block.error = { message: 'Valid JSON, but there is no object in it to describe' };
     }
     return block;
   });
+}
+
+/**
+ * One block holding every Microdata (or RDFa) item on the page, already
+ * converted to JSON-LD-shaped objects by the collector. Null when there are none.
+ */
+export function buildFormatBlock(format, items) {
+  if (!items?.length) return null;
+  const block = { index: 0, format, text: '', origin: 'unknown', error: null, value: items, objects: [] };
+  block.objects = items.map((value) => makeObject(block, value, false));
+  return block;
 }
 
 // ------------------------------------------------- source vs. live DOM
@@ -155,7 +170,7 @@ function fingerprint(text) {
 }
 
 /**
- * Labels each live block as present in the server HTML ("source") or not
+ * Labels each live JSON-LD block as present in the server HTML ("source") or not
  * ("injected"), and returns the source texts that no longer exist in the DOM.
  * Formatting differences are ignored; duplicates are matched one for one.
  */
@@ -197,9 +212,17 @@ export function indexIds(blocks) {
 
 // ------------------------------------------------------------- export
 
-/** Everything that parsed, in page order: one value, or an array when there are several blocks. */
+/**
+ * Everything that parsed: each JSON-LD block as written, then each Microdata
+ * and RDFa item. One value on its own, otherwise an array.
+ */
 export function exportValue(blocks) {
-  const values = blocks.filter((b) => b.value !== undefined).map((b) => b.value);
+  const values = [];
+  for (const block of blocks) {
+    if (block.value === undefined) continue;
+    if (block.format === 'jsonld') values.push(block.value);
+    else values.push(...block.value);
+  }
   return values.length === 1 ? values[0] : values;
 }
 
