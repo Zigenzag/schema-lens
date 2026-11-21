@@ -69,6 +69,22 @@ npm run serve          # UI harness at http://localhost:8765/test/harness.html
 
 Requires desktop Firefox 140 or later. Firefox for Android is not supported.
 
+## Release
+
+GitHub builds and publishes a release when a version tag is pushed.
+
+1. Set the new version in `extension/manifest.json` and `package.json`, then commit and push.
+2. Tag that commit and push the tag:
+
+```
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow in `.github/workflows/release.yml` checks that the tag matches the manifest version, runs the unit tests and the linter, builds the zip and attaches it to a new release with generated notes. The zip is unsigned: it can be loaded temporarily or uploaded to Mozilla for signing, but Firefox won't install it permanently as it is.
+
+To try the pipeline without publishing anything, run the workflow by hand from the Actions tab. It does the same checks and keeps the zip as a workflow artifact.
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE); a copy ships inside the add-on package.

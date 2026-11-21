@@ -1,0 +1,61 @@
+name: Release
+
+# Pushing a tag such as v1.0.0 tests and builds the add-on, then publishes a
+# GitHub release with the packaged zip attached.
+#
+# Running the workflow by hand (Actions tab → Release → Run workflow) does the
+# same checks and build but publishes nothing; the zip is kept as a workflow
+# artifact so the pipeline can be tried without cutting a release.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check the tag matches the add-on version
+        if: github.ref_type == 'tag'
+        run: |
+          version=$(jq -r .version extension/manifest.json)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the version in extension/manifest.json ($version)."
+            exit 1
+          fi
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Lint the add-on
+        run: npm run lint
+
+      - name: Build the package
+        run: npm run build
+
+      - name: Keep the package as an artifact (manual runs)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v7
+        with:
+          name: add-on-package
+          path: dist/*.zip
+          if-no-files-found: error
+
+      - name: Publish the GitHub release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.zip --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
