@@ -4,6 +4,7 @@
   "short_name": "Schema Lens",
   "version": "1.0.0",
   "description": "See the JSON-LD structured data on any page: every schema object as a searchable, copyable accordion.",
+  "homepage_url": "https://github.com/Zigenzag/schema-lens",
   "icons": {
     "48": "icons/icon.svg",
     "96": "icons/icon.svg"

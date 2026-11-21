@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
+  "homepage": "https://github.com/Zigenzag/schema-lens",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zigenzag/schema-lens.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Zigenzag/schema-lens/issues"
+  },
   "description": "Firefox add-on that shows a page's JSON-LD structured data as accordions.",
   "type": "module",
   "scripts": {

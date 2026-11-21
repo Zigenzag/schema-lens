@@ -2,6 +2,8 @@
 
 Shows the JSON-LD structured data on the current page. Every schema object gets its own accordion with a collapsible tree inside.
 
+Source and issue tracker: <https://github.com/Zigenzag/schema-lens>
+
 "Schema Lens" is a working name. To rename it, change `name`, `short_name` and the sidebar title in `extension/manifest.json`.
 
 ## Install
