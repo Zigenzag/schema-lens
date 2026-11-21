@@ -17,7 +17,7 @@ Source and issue tracker: <https://github.com/Zigenzag/schema-lens>
 
 Release Firefox only keeps add-ons that Mozilla has signed. For a private (unlisted) build:
 
-1. Pick your own add-on ID in `extension/manifest.json` (`browser_specific_settings.gecko.id`). It is permanent once signed.
+1. Check the add-on ID in `extension/manifest.json` (`browser_specific_settings.gecko.id`, currently `schema-lens@zigenzag.co.uk`). It is permanent once signed.
 2. Create API credentials at <https://addons.mozilla.org/developers/addon/api/key/>.
 3. Run `npx web-ext sign --source-dir extension --channel unlisted --api-key <issuer> --api-secret <secret>`.
 4. Open the resulting `.xpi` in Firefox.

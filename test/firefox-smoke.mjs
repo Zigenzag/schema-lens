@@ -22,8 +22,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expectedFormats } from './fixtures/formats.expected.mjs';
 
-const ADDON_ID = 'schema-lens@local';
-const WIDGET = 'schema-lens_local'; // how Firefox spells the id in its own element ids
+const ADDON_ID = 'schema-lens@zigenzag.co.uk';
+const WIDGET = 'schema-lens_zigenzag_co_uk'; // how Firefox spells the id in its own element ids
 const root = fileURLToPath(new URL('..', import.meta.url));
 const firefox = process.env.FIREFOX || (process.platform === 'win32' ? 'C:\\Program Files\\Mozilla Firefox\\firefox.exe' : 'firefox');
 const httpPort = 8766;
