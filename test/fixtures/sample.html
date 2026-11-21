@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture: Classic Leather Wallet</title>
+
+  <!-- 1. A single object -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Classic Leather Wallet",
+    "sku": "WAL-001",
+    "image": ["https://example.com/img/wallet-1.jpg", "https://example.com/img/wallet-2.jpg"],
+    "description": "Full-grain leather bifold wallet with eight card slots.",
+    "brand": { "@type": "Brand", "name": "Northfold" },
+    "offers": {
+      "@type": "Offer",
+      "price": 49.99,
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock",
+      "seller": { "@type": "Organization", "name": "Northfold Goods" }
+    },
+    "aggregateRating": { "@type": "AggregateRating", "ratingValue": 4.6, "reviewCount": 128 },
+    "isFamilyFriendly": true,
+    "gtin13": null
+  }
+  </script>
+
+  <!-- 2. A @graph whose nodes point at each other by @id -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://example.com/#org",
+        "name": "Northfold Goods",
+        "url": "https://example.com/",
+        "sameAs": ["https://www.linkedin.com/company/northfold", "https://www.instagram.com/northfold"]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://example.com/#website",
+        "name": "Northfold",
+        "publisher": { "@id": "https://example.com/#org" }
+      },
+      {
+        "@type": ["WebPage", "ItemPage"],
+        "@id": "https://example.com/wallet#page",
+        "isPartOf": { "@id": "https://example.com/#website" },
+        "breadcrumb": { "@id": "https://example.com/wallet#crumbs" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://example.com/wallet#crumbs",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://example.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Wallets", "item": "https://example.com/wallets" },
+          { "@type": "ListItem", "position": 3, "name": "Classic Leather Wallet" }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <!-- 3. A top-level array, with a type attribute in an unusual spelling -->
+  <script type="application/LD+JSON; charset=utf-8">
+  [
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Is the leather real?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, full-grain cowhide." } },
+        { "@type": "Question", "name": "Does it block RFID?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, the lining blocks RFID." } }
+      ]
+    },
+    { "@context": "https://schema.org", "name": "An object with no type" }
+  ]
+  </script>
+
+  <!-- 4. Malformed: trailing comma -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": "Leather Craft Workshop",
+    "startDate": "2026-12-04T18:00",
+  }
+  </script>
+
+  <!-- Not JSON-LD: must be ignored -->
+  <script type="application/json">{"ignored": true}</script>
+</head>
+<body>
+  <h1>Classic Leather Wallet</h1>
+
+  <!-- Microdata -->
+  <div itemscope itemtype="https://schema.org/Review">
+    <span itemprop="author" itemscope itemtype="https://schema.org/Person"><span itemprop="name">A. Buyer</span></span>
+    <span itemprop="reviewBody">Lovely stitching.</span>
+  </div>
+
+  <!-- RDFa -->
+  <div vocab="https://schema.org/" typeof="Place"><span property="name">Northfold Workshop</span></div>
+
+  <!-- 5. Added after load, as a tag manager would -->
+  <script>
+    const s = document.createElement('script');
+    s.type = 'application/ld+json';
+    s.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: 'How we tan our leather',
+      author: { '@type': 'Person', name: 'Sam Field' },
+      datePublished: '2026-10-02',
+    });
+    document.head.append(s);
+  </script>
+</body>
+</html>

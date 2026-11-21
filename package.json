@@ -1,0 +1,19 @@
+{
+  "name": "schema-lens",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Firefox add-on that shows a page's JSON-LD structured data as accordions.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "test:firefox": "node test/firefox-smoke.mjs",
+    "serve": "node test/serve.mjs",
+    "lint": "web-ext lint --source-dir extension",
+    "build": "web-ext build --source-dir extension --artifacts-dir dist --overwrite-dest",
+    "start": "web-ext run --source-dir extension"
+  },
+  "devDependencies": {
+    "web-ext": "^10.8.0"
+  }
+}

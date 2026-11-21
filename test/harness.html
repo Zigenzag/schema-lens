@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel harness</title>
+</head>
+<body>
+<!--
+  Runs the real panel outside Firefox. The extension APIs are replaced by a
+  small mock that executes the injected functions inside a fixture page loaded
+  in a hidden iframe, so collection, parsing and rendering are all real.
+
+    harness.html?view=popup|sidebar
+                &fixture=fixtures/sample.html
+                &blocked=1      executeScript fails (restricted page)
+                &granted=0      site access not yet granted (sidebar)
+                &nosource=1     re-reading the page source fails
+-->
+<script type="module">
+  const params = new URLSearchParams(location.search);
+  const panelUrl = new URL('../extension/panel/panel.html', location.href);
+
+  const doc = new DOMParser().parseFromString(await (await fetch(panelUrl)).text(), 'text/html');
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = new URL('panel.css', panelUrl);
+  document.head.append(css);
+  document.body.replaceChildren(...[...doc.body.childNodes].map((n) => document.importNode(n, true)));
+
+  const frame = document.createElement('iframe');
+  frame.src = params.get('fixture') ?? 'fixtures/sample.html';
+  frame.style.cssText = 'position:fixed;left:-9999px;width:800px;height:600px;border:0';
+  const loaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+  document.body.append(frame);
+  await loaded;
+  if (params.has('nosource')) {
+    frame.contentWindow.fetch = () => Promise.reject(new TypeError('NetworkError when attempting to fetch resource.'));
+  }
+
+  const event = () => {
+    const listeners = new Set();
+    return { addListener: (fn) => listeners.add(fn), fire: (...args) => listeners.forEach((fn) => fn(...args)) };
+  };
+  let granted = params.get('granted') !== '0';
+  const blocked = () => params.has('blocked') || !granted;
+
+  globalThis.browser = {
+    tabs: {
+      query: async () => [{ id: 1, windowId: 1, active: true, status: 'complete' }],
+      onActivated: event(),
+      onUpdated: event(),
+    },
+    windows: { getCurrent: async () => ({ id: 1 }) },
+    scripting: {
+      executeScript: async ({ func }) => {
+        if (blocked()) throw new Error('Missing host permission for the tab');
+        return [{ frameId: 0, result: await frame.contentWindow.eval(`(${func})()`) }];
+      },
+    },
+    permissions: {
+      contains: async () => granted,
+      request: async () => (granted = true),
+      onAdded: event(),
+    },
+    sidebarAction: { open: async () => console.log('sidebarAction.open()') },
+    extension: { getViews: () => [] },
+  };
+
+  await import(new URL('panel.js', panelUrl));
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Schema Lens – JSON-LD Inspector",
+  "short_name": "Schema Lens",
+  "version": "1.0.0",
+  "description": "See the JSON-LD structured data on any page: every schema object as a searchable, copyable accordion.",
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+  "permissions": ["activeTab", "scripting"],
+  "optional_host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "Inspect structured data",
+    "default_icon": "icons/icon.svg",
+    "default_popup": "panel/panel.html?view=popup"
+  },
+  "sidebar_action": {
+    "default_title": "Schema Lens",
+    "default_icon": "icons/icon.svg",
+    "default_panel": "panel/panel.html?view=sidebar",
+    "open_at_install": false
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+J" },
+      "description": "Inspect structured data on this page"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "schema-lens@local",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  }
+}
