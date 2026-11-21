@@ -81,7 +81,7 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The workflow in `.github/workflows/release.yml` checks that the tag matches the manifest version, runs the unit tests and the linter, builds the zip and attaches it to a new release with generated notes. The zip is unsigned: it can be loaded temporarily or uploaded to Mozilla for signing, but Firefox won't install it permanently as it is.
+The workflow in `.github/workflows/release.yml` checks that the tag matches the manifest version, runs the unit tests, the linter and the Firefox end-to-end test, builds the zip and attaches it to a new release with generated notes. The zip is unsigned: it can be loaded temporarily or uploaded to Mozilla for signing, but Firefox won't install it permanently as it is.
 
 To try the pipeline without publishing anything, run the workflow by hand from the Actions tab. It does the same checks and keeps the zip as a workflow artifact.
 
